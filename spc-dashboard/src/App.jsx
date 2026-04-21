@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { motion } from "framer-motion";
 import {
   LineChart,
@@ -10,6 +9,7 @@ import {
   CartesianGrid,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 function App() {
@@ -17,46 +17,40 @@ function App() {
   const [stats, setStats] = useState(null);
   const [dark, setDark] = useState(true);
 
-  const generateData = () => {
-    const base = Array.from({ length: 10 }, () =>
-      5 + (Math.random() - 0.5) * 0.2
-    );
-    if (Math.random() > 0.7) base[base.length - 1] += 0.8;
-    return base;
-  };
+  useEffect(() => {
+    const ws = new WebSocket("ws://127.0.0.1:3000/ws");
 
-  const fetchData = async () => {
-    try {
-      const inputData = generateData();
-
-      const res = await axios.post("http://127.0.0.1:3000/analyze", {
-        data: inputData,
-        usl: 5.2,
-        lsl: 4.8,
-      });
+    ws.onmessage = (event) => {
+      const res = JSON.parse(event.data);
 
       const now = new Date();
 
-      const formatted = inputData.map((val, i) => ({
+      const formatted = res.data.map((val, i) => ({
         time: new Date(now.getTime() + i * 1000).toLocaleTimeString(),
         value: val,
-        ucl: res.data.ucl,
-        lcl: res.data.lcl,
-        mean: res.data.mean,
-        isAnomaly: val > res.data.ucl || val < res.data.lcl,
+        mean: res.mean,
+        ucl: res.ucl,
+        lcl: res.lcl,
+        usl: res.usl,
+        lsl: res.lsl,
+        std_dev: res.std_dev,
+        isAnomaly: val > res.ucl || val < res.lcl,
       }));
 
       setChartData(formatted);
-      setStats(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
+      setStats({
+        mean: res.mean.toFixed(3),
+        std_dev: res.std_dev.toFixed(3),
+        status: formatted.some((p) => p.isAnomaly)
+          ? "🚨 ALERT"
+          : "✅ OK",
+      });
+    };
+
+    ws.onerror = (err) => console.error("WebSocket error:", err);
+
+    return () => ws.close();
   }, []);
 
   const renderDot = ({ cx, cy, payload }) =>
@@ -75,7 +69,7 @@ function App() {
   return (
     <div style={{ display: "flex", height: "100vh", background: bg }}>
       
-      {/* 🔥 Sidebar */}
+      {/* Sidebar */}
       <motion.div
         initial={{ x: -100 }}
         animate={{ x: 0 }}
@@ -104,10 +98,9 @@ function App() {
         </button>
       </motion.div>
 
-      {/* 🔥 Main Content */}
+      {/* Main */}
       <div style={{ flex: 1, padding: "20px", color: text }}>
         
-        {/* HEADER */}
         <motion.h1
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -119,27 +112,30 @@ function App() {
             color: "transparent",
           }}
         >
-          SPC Real-Time Monitoring
+          📊 SPC Real-Time Monitoring
         </motion.h1>
 
-        {/* STATS */}
         {stats && (
           <motion.div
             initial={{ y: 20 }}
             animate={{ y: 0 }}
-            style={{ display: "flex", gap: 20, marginTop: 20, flexWrap: "wrap" }}
+            style={{
+              display: "flex",
+              gap: 20,
+              marginTop: 20,
+              flexWrap: "wrap",
+            }}
           >
-            <Card label="Mean" value={stats.mean.toFixed(3)} />
-            <Card label="Cpk" value={stats.cpk.toFixed(3)} />
+            <Card label="Mean" value={stats.mean} />
+            <Card label="Std Dev" value={stats.std_dev} />
             <Card
               label="Status"
-              value={stats.out_of_control ? "🚨 ALERT" : "✅ OK"}
-              danger={stats.out_of_control}
+              value={stats.status}
+              danger={stats.status.includes("ALERT")}
             />
           </motion.div>
         )}
 
-        {/* CHART */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -158,10 +154,17 @@ function App() {
               <Tooltip />
               <Legend />
 
+              {/* Data */}
               <Line dataKey="value" stroke="#3b82f6" dot={renderDot} />
-              <Line dataKey="ucl" stroke="#ef4444" />
-              <Line dataKey="lcl" stroke="#22c55e" />
-              <Line dataKey="mean" stroke="#f59e0b" />
+
+              {/* SPC Lines */}
+              <Line dataKey="mean" stroke="#f59e0b" dot={false} />
+              <Line dataKey="ucl" stroke="#ef4444" dot={false} />
+              <Line dataKey="lcl" stroke="#22c55e" dot={false} />
+
+              {/* Spec Limits */}
+              <ReferenceLine y={chartData[0]?.usl} stroke="#f97316" label="USL" />
+              <ReferenceLine y={chartData[0]?.lsl} stroke="#06b6d4" label="LSL" />
             </LineChart>
           </ResponsiveContainer>
         </motion.div>

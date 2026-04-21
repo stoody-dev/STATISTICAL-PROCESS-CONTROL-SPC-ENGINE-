@@ -1,73 +1,79 @@
-use axum::{routing::post, Json, Router};
-use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
+use axum::{
+    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    response::IntoResponse,
+    routing::get,
+    Router,
+};
+use tokio::net::TcpListener;
+use tokio::time::{sleep, Duration};
 
 mod spc;
-mod worker;
-
-use spc::{analyze, SPCInput};
-
-#[derive(Deserialize)]
-struct InputPayload {
-    data: Vec<f64>,
-    usl: f64,
-    lsl: f64,
-}
-
-#[derive(Serialize)]
-struct OutputPayload {
-    mean: f64,
-    std_dev: f64,
-    cp: f64,
-    cpk: f64,
-    ucl: f64,
-    lcl: f64,
-    out_of_control: bool,
-    violations: Vec<String>,
-}
-
-async fn analyze_handler(Json(payload): Json<InputPayload>) -> Json<OutputPayload> {
-    let result = analyze(SPCInput {
-        data: payload.data,
-        usl: payload.usl,
-        lsl: payload.lsl,
-    });
-
-    Json(OutputPayload {
-        mean: result.mean,
-        std_dev: result.std_dev,
-        cp: result.cp,
-        cpk: result.cpk,
-        ucl: result.ucl,
-        lcl: result.lcl,
-        out_of_control: result.out_of_control,
-        violations: result.violations,
-    })
-}
-
 
 #[tokio::main]
 async fn main() {
-    // 🔥 Start background monitoring worker
-    tokio::spawn(async {
-        worker::start_worker().await;
-    });
+    let app = Router::new().route("/ws", get(ws_handler));
 
-    // API routes
-    let app = Router::new()
-    .route("/analyze", post(analyze_handler))
-    .layer(CorsLayer::permissive());
-
-    // Server setup
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    println!("Server running on http://{}", addr);
-
-    let listener = tokio::net::TcpListener::bind(addr)
+    let listener = TcpListener::bind("127.0.0.1:3000")
         .await
-        .unwrap();
+        .expect("Failed to bind");
+
+    println!("🚀 WebSocket running at ws://127.0.0.1:3000/ws");
 
     axum::serve(listener, app)
         .await
-        .unwrap();
+        .expect("Server failed");
+}
+
+async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+    ws.on_upgrade(handle_socket)
+}
+
+async fn handle_socket(mut socket: WebSocket) {
+    loop {
+        let data = generate_data();
+
+        let result = spc::analyze(&data, 5.2, 4.8);
+
+        // FULL payload (no unused fields now)
+        let payload = serde_json::json!({
+            "data": data,
+            "mean": result.mean,
+            "std_dev": result.std_dev,
+            "ucl": result.ucl,
+            "lcl": result.lcl,
+            "usl": result.usl,
+            "lsl": result.lsl
+        });
+
+        if socket
+            .send(Message::Text(payload.to_string()))
+            .await
+            .is_err()
+        {
+            println!("❌ Client disconnected");
+            break;
+        }
+
+        sleep(Duration::from_secs(1)).await;
+    }
+}
+
+// Simulated process data with occasional anomaly
+fn generate_data() -> Vec<f64> {
+    use rand::Rng;
+
+    let mut rng = rand::thread_rng();
+
+    (0..20)
+        .map(|_| {
+            let mut val = 5.0 + rng.gen_range(-0.3..0.3);
+
+            // Inject anomaly sometimes
+            if rng.gen_bool(0.15) {
+                val += rng.gen_range(0.7..1.2);
+            }
+
+            val
+        })
+        .collect()
 }
