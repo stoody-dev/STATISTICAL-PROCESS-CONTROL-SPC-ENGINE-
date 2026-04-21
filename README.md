@@ -1,150 +1,128 @@
-📊 Real-Time SPC Monitoring System
-
-Live SPC Monitoring with Anomaly Detection
-
-✅ Stable Process
+# 📊 Real-Time SPC Monitoring System
 
 
 
-🚨 Out-of-Control Process
 
+### 🚀 Live SPC Monitoring with Anomaly Detection
 
+---
 
-🧠 Overview
+## 🖼️ Dashboard Preview
 
+### ✅ Stable Process
+![Stable](screenshots/dashboard-stable.png)
 
+### 🚨 Out-of-Control Process
+![Alert](screenshots/dashboard-alert.png)
 
-A full-stack system for real-time Statistical Process Control (SPC), designed to monitor process stability, detect anomalies, and visualize trends through an interactive dashboard.
+---
 
+## 🧭 System Architecture
 
+![Architecture](screenshots/system-design.png)
 
-🚀 Features
+---
 
-📈 Real-time time-series visualization
+## 🧠 Overview
 
-📊 Process capability analysis (Cp, Cpk)
+A full-stack system for real-time **Statistical Process Control (SPC)**, designed to monitor process stability, detect anomalies, and visualize trends through an interactive dashboard.
 
-🚨 Automatic anomaly detection
+This project simulates industrial process data and applies statistical analysis to identify deviations in real time.
 
-🔴 Out-of-control point highlighting
+---
 
-⏱ Time-based data tracking
+## 🚀 Features
 
-🌗 Dark / Light mode UI
+- 📈 Real-time time-series visualization  
+- 📊 Process capability analysis (Cp, Cpk)  
+- 🚨 Automatic anomaly detection  
+- 🔴 Out-of-control point highlighting  
+- ⏱ Time-based data tracking  
+- 🌗 Dark / Light mode UI  
+- ⚡ Smooth animations (Framer Motion)  
+- 🧭 Dashboard layout with sidebar  
 
-⚡ Smooth animations (Framer Motion)
+---
 
-🧭 Dashboard layout with sidebar
-
-🏗️ Architecture
-
-
-
+## 🏗️ Architecture Flow
 Frontend (React Dashboard)
-
 ↓
-
 API Layer (Rust - Axum)
-
 ↓
-
 SPC Engine (Core Logic)
-
 ↓
-
 Statistical Analysis (Mean, Variance, Cp, Cpk)
 
+---
 
+## ⚙️ Tech Stack
 
-⚙️ Tech Stack
+### Backend
+- Rust  
+- Axum  
+- Tokio  
 
-Backend
+### Frontend
+- React  
+- Recharts  
+- Framer Motion  
 
-Rust
+---
 
-Axum
+## 📦 Setup Instructions
 
-Tokio
+### 🔧 Backend
 
-Frontend
-
-React
-
-Recharts
-
-Framer Motion
-
-📦 Setup Instructions
-
-🔧 Backend
-
-
-
+```bash
 cd spc-engine
-
 cargo run
-
-
-
 Runs on: http://127.0.0.1:3000
 
-
-
 💻 Frontend
-
-
-
 cd spc-dashboard
-
 npm install
-
 npm run dev
 
-
-
 Runs on: http://localhost:5173
+```
 
+## 📊 Key Concepts
 
+- Statistical Process Control (SPC)  
+- Control Limits (UCL / LCL)  
+- Process Capability (Cp, Cpk)  
+- Real-time monitoring systems  
+- Anomaly detection  
 
-📊 Key Concepts
+---
 
-Statistical Process Control (SPC)
+## 🔍 How It Works
 
-Control Limits (UCL / LCL)
+1. Frontend generates simulated process data  
+2. Data is sent to the Rust backend API  
+3. Backend computes:
+   - Mean  
+   - Standard deviation  
+   - Control limits (UCL / LCL)  
+   - Cp / Cpk  
+4. Response is returned to frontend  
+5. Dashboard visualizes results in real time  
+6. Out-of-control points are highlighted  
 
-Process Capability (Cp, Cpk)
+---
 
-Real-time monitoring
+## 📌 Future Improvements
 
-Anomaly detection
+- 🔄 WebSocket-based real-time streaming  
+- 🗄️ Persistent storage (PostgreSQL)  
+- 📉 Advanced SPC rules (Western Electric rules)  
+- 📊 Multi-process monitoring  
+- 🔔 Alert notifications  
 
-🔍 How It Works
+---
 
-Frontend generates process data
-
-Sends data to backend API
-
-Backend computes statistics
-
-Returns analysis (mean, UCL, LCL, Cp, Cpk)
-
-Frontend visualizes results in real-time
-
-📌 Future Improvements
-
-WebSocket-based real-time streaming
-
-Database integration (PostgreSQL)
-
-Advanced SPC rules (Western Electric)
-
-Multi-process monitoring
-
-Alert notifications
-
-📎 Author
-
-
+## 👤 Author
 
 Akshay Choudhary
+
 
