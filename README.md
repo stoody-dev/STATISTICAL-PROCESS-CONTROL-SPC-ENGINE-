@@ -1,5 +1,4 @@
-# 📊 Real-Time SPC Monitoring System
-
+# 📊 Real-time streaming analytics system with anomaly detection
 
 
 
